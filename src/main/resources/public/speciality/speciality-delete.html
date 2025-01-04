@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <script src="https://unpkg.com/vue@3.4.27/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.css">
+    <script src="https://unpkg.com/axios@1.7.2/dist/axios.min.js"></script>
+    <title>删除专业</title>
+</head>
+<body>
+<div id="app">
+    <main class="container">
+        <dialog open>
+            <article>
+                <header>
+                    <strong>确定要删除?</strong>
+                </header>
+                <ul>
+                    <li>专业名称：{{ name }}</li>
+                    <li>年级：{{ grade }}</li>
+                    <li>代码：{{ code }}</li>
+                    <li>学院：{{ collegeName }}</li>
+                    <li>备注：{{ remark }}</li>
+                </ul>
+                <footer>
+                    <div style="color: rgb(0, 137, 90); display: inline-block; margin-right: 24px" v-if="displaySuccess">
+                        操作成功，即将返回
+                    </div>
+                    <button @click="doDelete" :disabled="!canClick">删除</button>
+                </footer>
+            </article>
+        </dialog>
+    </main>
+</div>
+
+<script>
+    const App = {
+        data() {
+            return {
+                name: "",
+                grade: "",
+                code: "",
+                remark: "",
+                collegeName: "",
+                canClick: false,
+                displaySuccess: false
+            };
+        },
+        methods: {
+            // 初始化页面数据
+            init() {
+                const queryString = window.location.search;
+                const urlParams = new URLSearchParams(queryString);
+                const id = urlParams.get('id');
+
+                if (id == null) {
+                    console.log("URL中没有id：", window.location.href);
+                } else {
+                    const url = "/specialities/" + id;
+                    const vueInstance = this;
+
+                    axios.get(url).then(function(response) {
+                        if(response.status == 200 && response.data != null && response.data.code === 200) {
+                            const item = response.data.data.rows[0];
+                            vueInstance.name = item.speciality.name;
+                            vueInstance.grade = item.speciality.grade;
+                            vueInstance.code = item.speciality.code;
+                            vueInstance.remark = item.speciality.remark;
+                            vueInstance.collegeName = item.college.name;
+                            vueInstance.canClick = true;
+                        }
+                    })
+                        .catch(function (error) {
+                            console.log("访问出错了：", error);
+                        });
+                }
+            },
+            // 提交删除
+            doDelete() {
+                const queryString = window.location.search;
+                const urlParams = new URLSearchParams(queryString);
+                const id = urlParams.get('id');
+
+                this.canClick = false;
+                const vueInstance = this;
+
+                const url = "/specialities/" + id;
+                axios.delete(url).then(function(response) {
+                    if(response.status == 200 && response.data != null && response.data.code === 200) {
+                        vueInstance.displaySuccess = true;
+                        window.setTimeout(() => {
+                            window.location.href = "/speciality-list.html";
+                        }, 100);
+                    }
+                })
+                    .catch(function (error) {
+                        console.log("访问出错了：", error);
+                    });
+            }
+        },
+        mounted() {
+            this.init();
+        }
+    };
+
+    const app = Vue.createApp(App);
+    app.mount("#app");
+</script>
+</body>
+</html>

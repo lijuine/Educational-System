@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <script src="https://unpkg.com/vue@3.4.27/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.css">
+    <script src="https://unpkg.com/axios@1.7.2/dist/axios.min.js"></script>
+    <title>删除管理员</title>
+</head>
+
+<body>
+<div id="app">
+    <main class="container">
+        <article>
+            <header>确认删除</header>
+            <p>您确定要删除这个管理员吗？此操作不可恢复。</p>
+            <footer>
+                <button @click="doDelete" :disabled="!canClick" class="secondary">确认删除</button>
+                <a href="/dean-list.html" role="button">取消</a>
+            </footer>
+        </article>
+    </main>
+</div>
+
+<script>
+    const App = {
+        data() {
+            return {
+                canClick: true
+            };
+        },
+
+        methods: {
+            doDelete() {
+                const id = new URLSearchParams(window.location.search).get('id');
+                if (!id) return;
+
+                this.canClick = false;
+                const url = `/deans/${id}`;
+
+                axios.delete(url)
+                    .then(response => {
+                        if(response.status === 200 && response.data.code === 200) {
+                            window.location.href = "/dean-list.html";
+                        } else {
+                            alert("删除失败");
+                            this.canClick = true;
+                        }
+                    })
+                    .catch(error => {
+                        console.error("删除失败：", error);
+                        this.canClick = true;
+                    });
+            }
+        }
+    };
+
+    const app = Vue.createApp(App);
+    app.mount("#app");
+</script>
+</body>
+</html>

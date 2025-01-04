@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <script src="https://unpkg.com/vue@3.4.27/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.css">
+    <script src="https://unpkg.com/axios@1.7.2/dist/axios.min.js"></script>
+    <title>班级管理</title>
+    <style>
+        .grid {
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+        .search-input {
+            flex-grow: 1;
+            max-width: 1120px;
+            height: 30px;
+        }
+        .search-button {
+            width: 80px;
+            height: 46px;
+        }
+    </style>
+</head>
+
+<body>
+<div id="app">
+    <main class="container">
+        <nav>
+            <ul>
+                <li><strong>班级列表</strong></li>
+            </ul>
+            <ul>
+                <li><a :href="isViewMode ? 'sindex.html' : 'aindex.html'">首页</a></li>
+                <li v-if="showActionButtons()"><a href="/classgroup/classgroup-add.html">添加</a></li>
+            </ul>
+        </nav>
+
+        <!-- 添加搜索框和搜索按钮 -->
+        <div class="grid">
+            <input type="text" id="searchInput" placeholder="搜索班级名称或编号" v-model="searchQuery" @keyup="handleKeyup" class="search-input">
+            <button @click="search" class="search-button">搜索</button>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">班级名称</th>
+                <th scope="col">班级编号</th>
+                <th scope="col">专业</th>
+                <th scope="col">学院</th>
+                <th scope="col">备注</th>
+                <th scope="col" v-if="showActionButtons()">修改</th>
+                <th scope="col" v-if="showActionButtons()">删除</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="(item, index) in items">
+                <td>{{ item.classgroup.name }}</td>
+                <td>{{ item.classgroup.code }}</td>
+                <td>{{ item.speciality.name }}</td>
+                <td>{{ item.college.name }}</td>
+                <td>{{ item.classgroup.remark }}</td>
+                <td v-if="showActionButtons()"><a :href="getEditUrl(item)">修改</a></td>
+                <td v-if="showActionButtons()"><a :href="getDeleteUrl(item)">删除</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </main>
+</div>
+
+<script>
+    const App = {
+        data() {
+            return {
+                items: [],
+                searchQuery: '', // 用于存储搜索框中的值
+                isViewMode: false, // 添加一个变量来控制是否是查看模式
+            };
+        },
+
+        methods: {
+            init() {
+                let url = "/classgroups";
+                let vueInstance = this;
+
+                axios.get(url).then(function(response) {
+                    console.log("响应的状态码：", response.status);
+                    console.log("响应的数据：", JSON.stringify(response.data));
+
+                    if(response.status === 200 && response.data != null
+                        && response.data.code === 200) {
+                        vueInstance.items = response.data.data.rows;
+                    }
+                })
+                    .catch(function (error) {
+                        console.log("访问出错了：", error);
+                        console.log("地址：", url);
+                    });
+            },
+
+            getDeleteUrl(item) {
+                let url = "/classgroup/classgroup-delete.html?id=" + item.classgroup.id;
+                return url;
+            },
+
+            getEditUrl(item) {
+                let url = "/classgroup/classgroup-edit.html?id=" + item.classgroup.id;
+                return url;
+            },
+
+            search() {
+                let url = "/classgroups/search?keyword=" + this.searchQuery;
+                let vueInstance = this;
+
+                axios.get(url).then(function(response) {
+                    console.log("响应的状态码：", response.status);
+                    console.log("响应的数据：", JSON.stringify(response.data));
+
+                    if(response.status === 200 && response.data != null && response.data.code === 200) {
+                        vueInstance.items = response.data.data.rows;
+                    }
+                })
+                    .catch(function (error) {
+                        console.log("访问出错了：", error);
+                        console.log("地址：", url);
+                    });
+            },
+
+            handleKeyup(event) {
+                if (event.key === 'Enter') {
+                    this.search();
+                }
+            },
+
+            showActionButtons() {
+                return !this.isViewMode;
+            }
+        },
+        mounted() {
+            const urlParams = new URLSearchParams(window.location.search);
+            this.isViewMode = urlParams.get('mode') === 'view';
+            
+            this.init();
+        }
+    };
+
+    const app = Vue.createApp(App);
+    app.mount("#app");
+</script>
+</body>
+</html>

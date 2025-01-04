@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <script src="https://unpkg.com/vue@3.4.27/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.css">
+    <script src="https://unpkg.com/axios@1.7.2/dist/axios.min.js"></script>
+    <title>修改班级</title>
+</head>
+
+<body>
+<div id="app">
+    <main class="container">
+        <form style="margin-top: 32px">
+            <fieldset>
+                <label>
+                    班级名称
+                    <input name="name" v-model="form.name" />
+                </label>
+                <label>
+                    班级编号
+                    <input name="code" v-model="form.code" />
+                </label>
+                <label>
+                    备注
+                    <input name="remark" v-model="form.remark" />
+                </label>
+
+                <!-- 专业列表供选择： 显示专业名称，取得选中专业的id -->
+                <div class="form-group">
+                    <label>专业</label>
+                    <select v-model="form.specialityId" class="form-control">
+                        <option value="">请选择专业</option>
+                        <option v-for="item in specialities" :key="item.speciality.id" :value="item.speciality.id">
+                            {{ item.speciality.name }} ({{ item.college.name }})
+                        </option>
+                    </select>
+                </div>
+            </fieldset>
+
+            <button @click.prevent="doUpdate" :disabled="!canClick">修改</button>
+            <div style="color: rgb(0, 137, 90); display: inline-block; margin-left: 24px" v-if="displaySuccess">
+                操作成功，即将返回
+            </div>
+        </form>
+    </main>
+</div>
+
+<script>
+    const App = {
+        data() {
+            return {
+                form: {
+                    id: '',
+                    name: '',
+                    code: '',
+                    specialityId: '',
+                    remark: ''
+                },
+                specialities: [],
+                canClick: true,
+                displaySuccess: false,
+            };
+        },
+
+        methods: {
+            // 获取专业列表
+            getSpecialities() {
+                axios.get('/specialities').then(response => {
+                    if (response.status === 200 && response.data.code === 200) {
+                        this.specialities = response.data.data.rows;
+                        this.canClick = true;
+                    }
+                }).catch(error => {
+                    console.error('获取专业列表失败:', error);
+                });
+            },
+
+            // 获取班级详情时设置专业ID
+            getDetail() {
+                const id = new URLSearchParams(window.location.search).get('id');
+                if (id) {
+                    axios.get(`/classgroups/${id}`).then(response => {
+                        if (response.status === 200 && response.data.code === 200) {
+                            const data = response.data.data.rows[0];
+                            this.form = {
+                                id: data.classgroup.id,
+                                name: data.classgroup.name,
+                                code: data.classgroup.code,
+                                specialityId: data.speciality.id,
+                                remark: data.classgroup.remark
+                            };
+                        }
+                    }).catch(error => {
+                        console.error('获取班级详情失败:', error);
+                    });
+                }
+            },
+
+            doUpdate() {
+                if (!this.form.specialityId) {
+                    alert('请选择专业');
+                    return;
+                }
+
+                const url = "/classgroups";
+                const formData = { ...this.form };
+
+                this.canClick = false;
+
+                axios.put(url, formData)
+                    .then(response => {
+                        if(response.status === 200 && response.data.code === 200) {
+                            this.displaySuccess = true;
+                            setTimeout(() => {
+                                window.location.href = "/classgroup-list.html";
+                            }, 100);
+                        } else {
+                            console.log("更新失败");
+                            this.canClick = true;
+                        }
+                    })
+                    .catch(error => {
+                        console.error("更新失败：", error);
+                        this.canClick = true;
+                    });
+            }
+        },
+        mounted() {
+            this.getSpecialities();
+            this.getDetail();
+        }
+    };
+
+    const app = Vue.createApp(App);
+    app.mount("#app");
+</script>
+</body>
+</html>

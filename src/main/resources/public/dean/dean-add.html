@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <script src="https://unpkg.com/vue@3.4.27/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.css">
+    <script src="https://unpkg.com/axios@1.7.2/dist/axios.min.js"></script>
+    <title>添加管理员</title>
+</head>
+
+<body>
+<div id="app">
+    <main class="container">
+        <form style="margin-top: 32px">
+            <fieldset>
+                <label>
+                    用户名
+                    <input name="username" v-model="form.username" required />
+                </label>
+                <label>
+                    备注
+                    <input name="remark" v-model="form.remark" />
+                </label>
+            </fieldset>
+
+            <button @click.prevent="doAdd" :disabled="!canClick">添加</button>
+            <div style="color: rgb(0, 137, 90); display: inline-block; margin-left: 24px" v-if="displaySuccess">
+                操作成功，即将返回
+            </div>
+        </form>
+    </main>
+</div>
+
+<script>
+    const App = {
+        data() {
+            return {
+                form: {
+                    username: '',
+                    remark: ''
+                },
+                canClick: true,
+                displaySuccess: false,
+            };
+        },
+
+        methods: {
+            doAdd() {
+                if (!this.form.username) {
+                    alert('请输入用户名');
+                    return;
+                }
+
+                const url = "/deans";
+                this.canClick = false;
+
+                axios.post(url, this.form)
+                    .then(response => {
+                        if(response.status === 200 && response.data.code === 200) {
+                            this.displaySuccess = true;
+                            setTimeout(() => {
+                                window.location.href = "/dean-list.html";
+                            }, 100);
+                        } else {
+                            console.log("添加失败");
+                            this.canClick = true;
+                        }
+                    })
+                    .catch(error => {
+                        console.error("添加失败：", error);
+                        this.canClick = true;
+                    });
+            }
+        }
+    };
+
+    const app = Vue.createApp(App);
+    app.mount("#app");
+</script>
+</body>
+</html>

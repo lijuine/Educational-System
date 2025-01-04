@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <script src="https://unpkg.com/vue@3.4.27/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.css">
+    <script src="https://unpkg.com/axios@1.7.2/dist/axios.min.js"></script>
+    <title>删除班级</title>
+</head>
+
+<body>
+<div id="app">
+    <main class="container">
+        <dialog open>
+            <article>
+                <header>
+                    <strong>确定要删除?</strong>
+                </header>
+                <ul>
+                    <li>班级名称：{{ name }}</li>
+                    <li>班级编号：{{ code }}</li>
+                    <li>专业：{{ specialityName }}</li>
+                    <li>备注：{{ remark }}</li>
+                </ul>
+
+                <footer>
+                    <div style="color: rgb(0, 137, 90); display: inline-block; margin-right: 24px" v-if="displaySuccess">
+                        操作成功，即将返回
+                    </div>
+
+                    <button @click="doDelete" :disabled="!canClick">删除</button>
+                </footer>
+            </article>
+        </dialog>
+    </main>
+</div>
+
+<script>
+    const App = {
+        data() {
+            return {
+                name: "",
+                code: "",
+                remark: "",
+                specialityName: "",
+                canClick: false,
+                displaySuccess: false,
+            };
+        },
+
+        methods: {
+            init() {
+                const queryString = window.location.search;
+                const urlParams = new URLSearchParams(queryString);
+                const id = urlParams.get('id');
+
+                this.canClick = false;
+                const vueInstance = this;
+
+                if(id == null ) {
+                    console.log("URL中没有id：", window.location.href);
+                }
+                else {
+                    const url = "/classgroups/" + id;
+
+                    // 取得要删除的记录的数据，并显示
+                    axios.get(url).then(function(response) {
+                        console.log("响应的状态码：", response.status);
+                        console.log("响应的数据：", JSON.stringify(response.data));
+
+                        if(response.status == 200 && response.data != null
+                            && response.data.code === 200 && response.data.data.rows != null) {
+                            vueInstance.name = response.data.data.rows[0].classgroup.name;
+                            vueInstance.code = response.data.data.rows[0].classgroup.code;
+                            vueInstance.remark = response.data.data.rows[0].classgroup.remark;
+                            vueInstance.specialityName = response.data.data.rows[0].speciality.name;
+
+                            vueInstance.canClick = true;
+                        }
+                        else {
+                            console.log("后端代码出错了，检查后端log");
+                        }
+                    })
+                        .catch(function (error) {
+                            console.log("访问出错了：", error);
+                            console.log("地址：", url);
+                        });
+                }
+            },
+
+            doDelete() {
+                const queryString = window.location.search;
+                const urlParams = new URLSearchParams(queryString);
+                const id = urlParams.get('id');
+
+                this.canClick = false;
+                const vueInstance = this;
+
+                const url = "/classgroups/" + id;
+                // DELETE操作
+                axios.delete(url).then(function(response) {
+                    console.log("响应的状态码：", response.status);
+                    console.log("响应的数据：", JSON.stringify(response.data));
+
+                    if(response.status == 200 && response.data != null && response.data.code === 200) {
+                        vueInstance.displaySuccess = true;
+                        // 100毫秒后跳转
+                        window.setTimeout(() => {
+                            window.location.href = "/classgroup-list.html";
+                        }, 100);
+                    }
+                    else {
+                        console.log("后端代码出错了，检查后端log");
+                    }
+                })
+                    .catch(function (error) {
+                        console.log("访问出错了：", error);
+                        console.log("地址：", url);
+                    });
+            }
+        },
+        mounted() {
+            this.init();
+        }
+    };
+
+    const app = Vue.createApp(App);
+    app.mount("#app");
+</script>
+</body>
+</html>

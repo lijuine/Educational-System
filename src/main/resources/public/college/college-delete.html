@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <script src="https://unpkg.com/vue@3.4.27/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.css">
+    <script src="https://unpkg.com/axios@1.7.2/dist/axios.min.js"></script>
+    <title>删除学院</title>
+</head>
+
+<body>
+<div id="app">
+    <main class="container">
+        <dialog open>
+            <article>
+                <header>
+                    <strong>确定要删除?</strong>
+                </header>
+                <ul>
+                    <li>名称：{{ name }}</li>
+                    <li>备注：{{ remark }}</li>
+                </ul>
+                
+                <footer>
+                    <div style="color: rgb(0, 137, 90); display: inline-block; margin-right: 24px" v-if="displaySuccess">
+                        操作成功，即将返回
+                    </div>
+
+                    <button @click="doDelete" :disabled="!canClick">删除</button>                    
+                </footer>
+            </article>
+        </dialog>
+    </main>
+</div>
+
+<script>
+    const App = {
+        data() {
+            return {
+                name: "",                                   // 要显示的记录的字段
+                remark: "",
+
+                canClick: false,                            // 访问后端过程中，按钮不可用
+                displaySuccess: false,                      // 操作成功后显示提示信息
+            };
+        },
+
+        methods: {
+            init() {
+                // 获取地址栏中传递的URL参数id
+                const queryString = window.location.search;
+                const urlParams = new URLSearchParams(queryString);
+                const id = urlParams.get('id');
+
+                this.canClick = false;
+                const vueInstance = this;
+
+                if(id == null ) {
+                    console.log("URL中没有id：", window.location.href);
+                }
+                else {
+                    const url = "/colleges/" + id;
+
+                    // 取得要删除的记录的数据，并显示
+                    axios.get(url).then(function(response) {
+                        // response格式由Axios定义，包括了status，data等属性
+                        console.log("响应的状态码：", response.status);
+                        console.log("响应的数据：", JSON.stringify(response.data));
+
+                        // 访问自定义的JSON数据： response.data.code、response.data.msg、response.data.data
+                        if(response.status == 200 && response.data != null 
+                            && response.data.code === 200 && response.data.data.rows != null) {
+                            // 赋值即可更新页面
+                            vueInstance.name = response.data.data.rows[0].name;
+                            vueInstance.remark = response.data.data.rows[0].remark;
+
+                            // 取回数据后，才可以提交
+                            vueInstance.canClick = true;
+                        }
+                        else {
+                            console.log("后端代码出错了，检查后端log");
+                        }
+                    })
+                    .catch(function (error) {
+                        console.log("访问出错了：", error);
+                        console.log("地址：", url);
+                    });
+                }
+            },
+
+            doDelete() {
+                // 获取地址栏中传递的URL参数id
+                const queryString = window.location.search;
+                const urlParams = new URLSearchParams(queryString);
+                const id = urlParams.get('id');
+
+                this.canClick = false;
+                const vueInstance = this;
+
+                const url = "/colleges/" + id;
+                // DELETE操作
+                axios.delete(url).then(function(response) {
+                    console.log("响应的状态码：", response.status);
+                    console.log("响应的数据：", JSON.stringify(response.data));
+
+                    if(response.status == 200 && response.data != null && response.data.code === 200) {
+                        // 显示提示信息
+                        vueInstance.displaySuccess = true;
+
+                        //100毫秒后跳转到列表页
+                        window.setTimeout(() => {
+                            window.location.href = "/college-list.html";
+                        }, 100);
+                    }
+                    else {
+                        console.log("后端代码出错了，检查后端log");
+                    }
+                })
+                .catch(function (error) {
+                    console.log("访问出错了：", error);
+                    console.log("地址：", url);
+                });
+            }
+        },
+        mounted() {
+            this.init();
+        }
+    };
+
+    const app = Vue.createApp(App);
+    app.mount("#app");
+</script>
+</body>
+</html>

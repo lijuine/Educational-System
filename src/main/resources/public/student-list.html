@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <script src="https://unpkg.com/vue@3.4.27/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.css">
+    <script src="https://unpkg.com/axios@1.7.2/dist/axios.min.js"></script>
+    <title>学生管理</title>
+    <style>
+        .grid {
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+        .search-input {
+            flex-grow: 1;
+            max-width: 1120px;
+            height: 30px;
+        }
+        .search-button {
+            width: 80px;
+            height: 46px;
+        }
+    </style>
+</head>
+
+<body>
+<div id="app">
+    <main class="container">
+        <nav>
+            <ul>
+                <li><strong>学生列表</strong></li>
+            </ul>
+            <ul>
+                <li><a :href="isViewMode ? 'sindex.html' : 'aindex.html'">首页</a></li>
+                <li v-if="showActionButtons()"><a href="/student/student-add.html">添加</a></li>
+            </ul>
+        </nav>
+
+        <div class="grid">
+            <input type="text" id="searchInput" placeholder="搜索学生姓名或学号" v-model="searchQuery" @keyup="handleKeyup" class="search-input">
+            <button @click="search" class="search-button">搜索</button>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">姓名</th>
+                <th scope="col">学号</th>
+                <th scope="col">班级</th>
+                <th scope="col">专业</th>
+                <th scope="col">学院</th>
+                <th scope="col">备注</th>
+                <th scope="col" v-if="isViewMode || showActionButtons()">修改</th>
+                <th scope="col" v-if="isViewMode || showActionButtons()">删除</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="(item, index) in items">
+                <td>{{ item.student.name }}</td>
+                <td>{{ item.student.code }}</td>
+                <td>{{ item.classgroup.name }}</td>
+                <td>{{ item.speciality.name }}</td>
+                <td>{{ item.college.name }}</td>
+                <td>{{ item.student.remark }}</td>
+                <td v-if="showRowActions(item)"><a :href="getEditUrl(item)">修改</a></td>
+                <td v-if="showRowActions(item)"><a :href="getDeleteUrl(item)">删除</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </main>
+</div>
+
+<script>
+    const App = {
+        data() {
+            return {
+                items: [],
+                searchQuery: '',
+                isViewMode: false,
+                currentUserId: null
+            };
+        },
+
+        methods: {
+            init() {
+                let url = "/students";
+                let vueInstance = this;
+
+                axios.get(url).then(function(response) {
+                    console.log("响应的状态码：", response.status);
+                    console.log("响应的数据：", JSON.stringify(response.data));
+
+                    if(response.status === 200 && response.data != null
+                        && response.data.code === 200) {
+                        vueInstance.items = response.data.data.rows;
+                    }
+                })
+                    .catch(function (error) {
+                        console.log("访问出错了：", error);
+                        console.log("地址：", url);
+                    });
+            },
+
+            getDeleteUrl(item) {
+                let url = "/student/student-delete.html?id=" + item.student.id;
+                return url;
+            },
+
+            getEditUrl(item) {
+                let url = "/student/student-edit.html?id=" + item.student.id;
+                return url;
+            },
+
+            search() {
+                let url = "/students/search?keyword=" + this.searchQuery;
+                let vueInstance = this;
+
+                axios.get(url).then(function(response) {
+                    console.log("响应的状态码：", response.status);
+                    console.log("响应的数据：", JSON.stringify(response.data));
+
+                    if(response.status === 200 && response.data != null && response.data.code === 200) {
+                        vueInstance.items = response.data.data.rows;
+                    }
+                })
+                    .catch(function (error) {
+                        console.log("访问出错了：", error);
+                        console.log("地址：", url);
+                    });
+            },
+
+            handleKeyup(event) {
+                if (event.key === 'Enter') {
+                    this.search();
+                }
+            },
+
+            showActionButtons() {
+                return !this.isViewMode;
+            },
+
+            showRowActions(item) {
+                if (!this.isViewMode) {
+                    return true; // 管理员模式显示所有
+                }
+                // 学生模式只显示自己的
+                return item.student.id === this.currentUserId;
+            }
+        },
+        mounted() {
+            const urlParams = new URLSearchParams(window.location.search);
+            this.isViewMode = urlParams.get('mode') === 'view';
+            
+            // 从localStorage获取当前登录用户信息
+            const userInfo = localStorage.getItem('userInfo');
+            if (userInfo) {
+                const user = JSON.parse(userInfo);
+                this.currentUserId = user.id;
+            }
+            this.init();
+        }
+    };
+
+    const app = Vue.createApp(App);
+    app.mount("#app");
+</script>
+</body>
+</html>

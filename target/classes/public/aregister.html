@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教务管理系统 - 注册</title>
+    <script src="https://unpkg.com/vue@3.4.27/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/axios@1.7.2/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .image-container {
+            width: 500px;
+            height: 500px;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .register-container {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 2.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            width: 160%;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .form-container {
+            flex: 1;
+            padding-left: 2rem;
+        }
+
+        .register-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .register-header h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 0.8rem;
+            width: 100%;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.3rem;
+            color: #34495e;
+            font-size: 1rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1.2rem;
+        }
+
+        .form-group input:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .register-button {
+            width: 100%;
+            padding: 0.8rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .register-button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .links {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .links a {
+            color: #3498db;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .user-type-buttons {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        .type-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-right: 2rem;
+            cursor: pointer;
+        }
+
+        .type-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #3498db;
+            background: transparent;
+            transition: all 0.3s ease;
+        }
+
+        .type-dot.active {
+            background: #3498db;
+        }
+
+        .type-dot:hover:not(.active) {
+            background: rgba(52, 152, 219, 0.3);
+        }
+
+        .type-label {
+            color: #34495e;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="register-container">
+        <div class="image-container">
+            <img src="images/school-image.jpg" alt="学校图片">
+        </div>
+        <div class="form-container">
+            <div class="register-header">
+                <h1>账号注册</h1>
+            </div>
+            <form @submit.prevent="doRegister">
+                <div class="form-group">
+                    <label>姓名</label>
+                    <input
+                            type="text"
+                            v-model="form.name"
+                            placeholder="请输入姓名"
+                            required
+                    >
+                </div>
+                <div class="form-group">
+                    <label>{{ userType === 'admin' ? '工号' : '学号' }}</label>
+                    <input
+                            type="text"
+                            v-model="form.code"
+                            :placeholder="userType === 'admin' ? '请输入工号' : '请输入学号'"
+                            required
+                    >
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input
+                            type="password"
+                            v-model="form.password"
+                            placeholder="请输入密码"
+                            required
+                    >
+                </div>
+                <div class="form-group">
+                    <label>确认密码</label>
+                    <input
+                            type="password"
+                            v-model="form.confirmPassword"
+                            placeholder="请再次输入密码"
+                            required
+                    >
+                </div>
+                <div class="user-type-buttons">
+                    <div class="type-option" @click="userType = 'admin'">
+                        <div
+                                class="type-dot"
+                                :class="{ active: userType === 'admin' }"
+                        ></div>
+                        <span class="type-label">管理员</span>
+                    </div>
+                    <div class="type-option" @click="userType = 'student'">
+                        <div
+                                class="type-dot"
+                                :class="{ active: userType === 'student' }"
+                        ></div>
+                        <span class="type-label">学生</span>
+                    </div>
+                </div>
+                <button
+                        type="submit"
+                        class="register-button"
+                        :disabled="!canClick"
+                >
+                    {{ canClick ? '注册' : '注册中...' }}
+                </button>
+                <div class="error-message" v-if="errorMessage">
+                    {{ errorMessage }}
+                </div>
+            </form>
+            <div class="links">
+                <a href="alogin.html">已有账号？立即登录</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const App = {
+        data() {
+            return {
+                userType: 'admin', // 默认选择管理员
+                form: {
+                    name: '',
+                    code: '',
+                    password: '',
+                    confirmPassword: ''
+                },
+                canClick: true,
+                errorMessage: ''
+            }
+        },
+        methods: {
+            validateForm() {
+                if (!this.form.name || !this.form.code || !this.form.password || !this.form.confirmPassword) {
+                    this.errorMessage = '请填写所有必填项';
+                    return false;
+                }
+                if (this.form.password !== this.form.confirmPassword) {
+                    this.errorMessage = '两次输入的密码不一致';
+                    return false;
+                }
+                return true;
+            },
+            doRegister() {
+                if (!this.validateForm()) {
+                    return;
+                }
+
+                this.canClick = false;
+                this.errorMessage = '';
+
+                const url = this.userType === 'admin' ? '/admins/register' : '/students/register';
+                const registerData = {
+                    name: this.form.name,
+                    code: this.form.code,
+                    password: this.form.password
+                };
+
+                axios.post(url, registerData)
+                .then(response => {
+                    if (response.data.code === 200) {
+                        alert('注册成功！');
+                        window.location.href = 'alogin.html';
+                    } else {
+                        this.errorMessage = response.data.msg || '注册失败，请稍后重试';
+                        this.canClick = true;
+                    }
+                })
+                .catch(() => {
+                    this.errorMessage = '注册失败，请稍后重试';
+                    this.canClick = true;
+                });
+            }
+         }
+    };
+
+    const app = Vue.createApp(App);
+    app.mount("#app");
+</script>
+</body>
+</html>

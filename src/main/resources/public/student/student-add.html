@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <script src="https://unpkg.com/vue@3.4.27/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2.0.6/css/pico.css">
+    <script src="https://unpkg.com/axios@1.7.2/dist/axios.min.js"></script>
+    <title>添加学生</title>
+</head>
+
+<body>
+<div id="app">
+    <main class="container">
+        <form style="margin-top: 32px">
+            <fieldset>
+                <label>
+                    学生姓名
+                    <input name="name" v-model="form.name" />
+                </label>
+                <label>
+                    学号
+                    <input name="code" v-model="form.code" />
+                </label>
+                <label>
+                    备注
+                    <input name="remark" v-model="form.remark" />
+                </label>
+
+                <!-- 班级列表供选择： 显示班级名称，取得选中班级的id -->
+                <div class="form-group">
+                    <label>班级</label>
+                    <select v-model="form.classgroupId" class="form-control">
+                        <option value="">请选择班级</option>
+                        <option v-for="item in classgroups" :key="item.classgroup.id" :value="item.classgroup.id">
+                            {{ item.classgroup.name }} ({{ item.speciality.name }} - {{ item.college.name }})
+                        </option>
+                    </select>
+                </div>
+            </fieldset>
+
+            <button @click.prevent="doAdd" :disabled="!canClick">添加</button>
+            <div style="color: rgb(0, 137, 90); display: inline-block; margin-left: 24px" v-if="displaySuccess">
+                操作成功，即将返回
+            </div>
+        </form>
+    </main>
+</div>
+
+<script>
+    const App = {
+        data() {
+            return {
+                form: {
+                    name: '',
+                    code: '',
+                    classgroupId: '',
+                    remark: ''
+                },
+                classgroups: [],
+                canClick: true,
+                displaySuccess: false,
+            };
+        },
+
+        methods: {
+            getClassgroups() {
+                axios.get('/classgroups').then(response => {
+                    if (response.status === 200 && response.data.code === 200) {
+                        this.classgroups = response.data.data.rows;
+                        console.log('班级列表:', this.classgroups);
+                    }
+                }).catch(error => {
+                    console.error('获取班级列表失败:', error);
+                });
+            },
+
+            doAdd() {
+                if (!this.form.classgroupId) {
+                    alert('请选择班级');
+                    return;
+                }
+
+                const url = "/students";
+                const formData = {
+                    name: this.form.name,
+                    code: this.form.code,
+                    classgroupId: this.form.classgroupId,
+                    remark: this.form.remark,
+                };
+
+                this.canClick = false;
+
+                axios.post(url, formData)
+                    .then(response => {
+                        if(response.status === 200 && response.data.code === 200) {
+                            this.displaySuccess = true;
+                            setTimeout(() => {
+                                window.location.href = "/student-list.html";
+                            }, 100);
+                        } else {
+                            console.log("后端代码出错了，检查后端log");
+                            this.canClick = true;
+                        }
+                    })
+                    .catch(error => {
+                        console.error("添加失败：", error);
+                        this.canClick = true;
+                    });
+            }
+        },
+        mounted() {
+            this.getClassgroups();
+        }
+    };
+
+    const app = Vue.createApp(App);
+    app.mount("#app");
+</script>
+</body>
+</html>
